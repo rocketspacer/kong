@@ -252,4 +252,11 @@ typedefs.key = Schema.define {
 }
 
 
+typedefs.context = Schema.define {
+  type = "string",
+  default = "non-mtls",
+  one_of = { "non-mtls", "mtls", "any" },
+}
+
+
 return typedefs
