@@ -123,6 +123,17 @@ return {
       END;
       $$;
 
+      DO $$
+      BEGIN
+        ALTER TABLE IF EXISTS ONLY "plugins" ADD "context" TEXT UNIQUE;
+      EXCEPTION WHEN DUPLICATE_COLUMN THEN
+        -- Do nothing, accept existing state
+      END;
+      $$;
+
+      CREATE INDEX IF NOT EXISTS "plugins_context_idx" ON "plugins" ("context");
+
+      UPDATE plugins SET context = "non-mtls" WHERE context IS NULL;
 
 
       ALTER TABLE IF EXISTS ONLY "apis"
@@ -182,7 +193,6 @@ return {
       CREATE INDEX IF NOT EXISTS routes_name_idx ON routes(name);
 
 
-
       CREATE TABLE IF NOT EXISTS plugins_temp(
         id uuid,
         created_at timestamp,
@@ -190,6 +200,7 @@ return {
         route_id uuid,
         service_id uuid,
         consumer_id uuid,
+        context text,
         name text,
         config text, -- serialized plugin configuration
         enabled boolean,
@@ -225,6 +236,7 @@ return {
           route_id = "uuid",
           service_id = "uuid",
           consumer_id = "uuid",
+          context = "text",
           created_at = "timestamp",
           enabled = "boolean",
           cache_key = "text",
@@ -242,6 +254,7 @@ return {
         consumer_id = "consumer_id",
         created_at = "created_at",
         enabled = "enabled",
+        context = function(row) return "non-mtls" end,
         cache_key = function(row)
           return table.concat({
             "plugins",
@@ -269,6 +282,7 @@ return {
           route_id uuid,
           service_id uuid,
           consumer_id uuid,
+          context text,
           name text,
           config text, -- serialized plugin configuration
           enabled boolean,
@@ -282,6 +296,7 @@ return {
         CREATE INDEX IF NOT EXISTS ON plugins(service_id);
         CREATE INDEX IF NOT EXISTS ON plugins(consumer_id);
         CREATE INDEX IF NOT EXISTS ON plugins(cache_key);
+        CREATE INDEX IF NOT EXISTS ON plugins(context);
       ]]))
 
       plugins_def = {
@@ -294,6 +309,7 @@ return {
           route_id = "uuid",
           service_id = "uuid",
           consumer_id = "uuid",
+          context = "text",
           created_at = "timestamp",
           enabled = "boolean",
           cache_key = "text",
@@ -309,6 +325,7 @@ return {
         route_id = "route_id",
         service_id = "service_id",
         consumer_id = "consumer_id",
+        context = "context",
         created_at = "created_at",
         enabled = "enabled",
         cache_key = "cache_key",
